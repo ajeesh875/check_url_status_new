@@ -1,50 +1,49 @@
 import requests
-from bs4 import BeautifulSoup
+from office365.runtime.auth.authentication_context import AuthenticationContext
+from office365.sharepoint.client_context import ClientContext
 from plyer import notification
 import re
-import win32cred
-from requests_ntlm import HttpNtlmAuth  # Import HttpNtlmAuth from requests_ntlm library
 
-def get_credential(target_name):
+def get_menu_links(site_url, client_id, client_secret, tenant_id):
     try:
-        credential = win32cred.CredRead(target_name, win32cred.CRED_TYPE_GENERIC)
-        return credential['UserName'], credential['CredentialBlob'].decode()
-    except win32cred.error as e:
-        print(f"Failed to read credentials from Windows Credential Manager: {e}")
-        return None, None
+        ctx_auth = AuthenticationContext(f"https://login.microsoftonline.com/{tenant_id}")
+        if ctx_auth.acquire_token_for_client(client_id, client_secret):
+            ctx = ClientContext(site_url, ctx_auth)
+            web = ctx.web
+            ctx.load(web)
+            ctx.execute_query()
 
-def get_menu_links(site_url, username, password):
-    try:
-        response = requests.get(site_url, auth=HttpNtlmAuth(username, password))
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, "html.parser")
             menu_links = []
-            button_wrapper = soup.find("div", class_="buttonwrapper")
-            if button_wrapper:
-                buttons = button_wrapper.find_all("button")
-                for button in buttons:
-                    onclick_value = button.get("onclick")
-                    if onclick_value:
-                        url_match = re.search(r"'(https?://[^']*)'", onclick_value)
-                        if url_match:
-                            menu_links.append(url_match.group(1))
+            list_title = "Shared Documents"  # Replace with the name of your SharePoint list
+            list_obj = ctx.web.lists.get_by_title(list_title)
+            ctx.load(list_obj)
+            ctx.execute_query()
+
+            list_items = list_obj.get_items()
+            ctx.load(list_items)
+            ctx.execute_query()
+
+            for item in list_items:
+                menu_links.append(item["FileRef"])
+
             return menu_links
         else:
-            print(f"Failed to retrieve menu links from {site_url}. Status code: {response.status_code}")
+            print("Failed to authenticate with SharePoint.")
             return []
 
-    except requests.ConnectionError:
-        print(f"Failed to retrieve menu links from {site_url}. Connection error.")
+    except Exception as e:
+        print(f"Failed to retrieve menu links from {site_url}. Error: {e}")
         return []
 
 def check_link_status(url):
     try:
+        link_status = "Link Status"
         response = requests.get(url)
         if response.status_code == 200:
-            notification_title = "Link Status"
+            notification_title = link_status
             notification_message = f"The link {url} is up and running."
         else:
-            notification_title = "Link Status"
+            notification_title = link_status
             notification_message = f"The link {url} is down with status code {response.status_code}."
 
         notification.notify(
@@ -53,7 +52,7 @@ def check_link_status(url):
             timeout=5  # Display time for the notification in seconds
         )
     except requests.ConnectionError:
-        notification_title = "Link Status"
+        notification_title = link_status"
         notification_message = f"The link {url} is unreachable."
 
         notification.notify(
@@ -64,11 +63,12 @@ def check_link_status(url):
 
 # Example usage
 site_url = "https://lbg.sharepoint.com/sites/shared%20Documents"
-username = "your_sharepoint_username"
-password = "your_sharepoint_password"
+client_id = "your_client_id"
+client_secret = "your_client_secret"
+tenant_id = "your_tenant_id"
 
 # Get menu links from the SharePoint site
-menu_links = get_menu_links(site_url, username, password)
+menu_links = get_menu_links(site_url, client_id, client_secret, tenant_id)
 
 if menu_links:
     print(f"Total menu links found: {len(menu_links)}")
