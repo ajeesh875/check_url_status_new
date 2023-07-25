@@ -2,7 +2,16 @@ import requests
 from bs4 import BeautifulSoup
 from plyer import notification
 import re
-from requests_ntlm2 import HttpNtlmAuth  # Import HttpNtlmAuth from requests_ntlm2 library
+import win32cred
+from requests_ntlm import HttpNtlmAuth  # Import HttpNtlmAuth from requests_ntlm library
+
+def get_credential(target_name):
+    try:
+        credential = win32cred.CredRead(target_name, win32cred.CRED_TYPE_GENERIC)
+        return credential['UserName'], credential['CredentialBlob'].decode()
+    except win32cred.error as e:
+        print(f"Failed to read credentials from Windows Credential Manager: {e}")
+        return None, None
 
 def get_menu_links(site_url, username, password):
     try:
