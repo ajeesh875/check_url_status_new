@@ -1,49 +1,67 @@
-import csv
 import requests
-import smtplib
-from email.mime.text import MIMEText
+from bs4 import BeautifulSoup
+from plyer import notification
+import re
+from requests_ntlm import HttpNtlmAuth  # Import the requests_ntlm library for NTLM authentication
 
-def send_email(subject, body, sender_email, receiver_email, password):
-    message = MIMEText(body)
-    message["Subject"] = subject
-    message["From"] = sender_email
-    message["To"] = receiver_email
+def get_menu_links(site_url, username, password):
+    try:
+        response = requests.get(site_url, auth=HttpNtlmAuth(username, password))
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "html.parser")
+            menu_links = []
+            button_wrapper = soup.find("div", class_="buttonwrapper")
+            if button_wrapper:
+                buttons = button_wrapper.find_all("button")
+                for button in buttons:
+                    onclick_value = button.get("onclick")
+                    if onclick_value:
+                        url_match = re.search(r"'(https?://[^']*)'", onclick_value)
+                        if url_match:
+                            menu_links.append(url_match.group(1))
+            return menu_links
+        else:
+            print(f"Failed to retrieve menu links from {site_url}. Status code: {response.status_code}")
+    except requests.ConnectionError:
+        print(f"Failed to retrieve menu links from {site_url}. Connection error.")
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
+def check_link_status(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            notification_title = "Link Status"
+            notification_message = f"The link {url} is up and running."
+        else:
+            notification_title = "Link Status"
+            notification_message = f"The link {url} is down with status code {response.status_code}."
 
-def check_website_status(csv_file, sender_email, receiver_email, password):
-    website_status_list = []
+        notification.notify(
+            title=notification_title,
+            message=notification_message,
+            timeout=5  # Display time for the notification in seconds
+        )
+    except requests.ConnectionError:
+        notification_title = "Link Status"
+        notification_message = f"The link {url} is unreachable."
 
-    with open(csv_file, 'r') as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip the header row
-
-        for row in reader:
-            website_url = row[0]
-            try:
-                response = requests.get(website_url)
-                if response.status_code == 200:
-                    status = f"The website {website_url} is up and running."
-                else:
-                    status = f"The website {website_url} is down with a status code: {response.status_code}."
-            except requests.ConnectionError:
-                status = f"The website {website_url} is unreachable."
-            
-            website_status_list.append(status)
-
-    email_body = "\n".join(website_status_list)
-    send_email("Website Status Update", email_body, sender_email, receiver_email, password)
+        notification.notify(
+            title=notification_title,
+            message=notification_message,
+            timeout=5  # Display time for the notification in seconds
+        )
 
 # Example usage
-def main():
-    csv_file = 'websites.csv'
-    sender_email = 'sender@gmail.com'
-    receiver_email = 'receiver@gmail.com'
-    password = 'password here'
+site_url = "https://lbg.sharepoint.com/sites/shared%20Documents"
+username = "your_sharepoint_username"
+password = "your_sharepoint_password"
 
-    check_website_status(csv_file, sender_email, receiver_email, password)
+# Get menu links from the SharePoint site
+menu_links = get_menu_links(site_url, username, password)
 
-if __name__ == "__main__":
-    main()
+if menu_links:
+    print(f"Total menu links found: {len(menu_links)}")
+    print("Checking link status...")
+    for link in menu_links:
+        check_link_status(link)
+else:
+    print("No menu links found on the SharePoint site.")
