@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from plyer import notification
 import re
-from requests_ntlm import HttpNtlmAuth  # Import the requests_ntlm library for NTLM authentication
+from requests_ntlm2 import HttpNtlmAuth  # Import HttpNtlmAuth from requests_ntlm2 library
 
 def get_menu_links(site_url, username, password):
     try:
@@ -22,8 +22,11 @@ def get_menu_links(site_url, username, password):
             return menu_links
         else:
             print(f"Failed to retrieve menu links from {site_url}. Status code: {response.status_code}")
+            return []
+
     except requests.ConnectionError:
         print(f"Failed to retrieve menu links from {site_url}. Connection error.")
+        return []
 
 def check_link_status(url):
     try:
@@ -37,7 +40,7 @@ def check_link_status(url):
 
         notification.notify(
             title=notification_title,
-            message=notification_message,
+            message=str(notification_message),  # Ensure notification_message is a string
             timeout=5  # Display time for the notification in seconds
         )
     except requests.ConnectionError:
@@ -46,7 +49,7 @@ def check_link_status(url):
 
         notification.notify(
             title=notification_title,
-            message=notification_message,
+            message=str(notification_message),  # Ensure notification_message is a string
             timeout=5  # Display time for the notification in seconds
         )
 
