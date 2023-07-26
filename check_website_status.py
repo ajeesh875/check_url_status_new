@@ -3,7 +3,20 @@ import browser_cookie3
 from selenium import webdriver
 
 def get_chrome_cookies():
-    chrome_cookies = browser_cookie3.chrome()
+    user_profile = os.path.expanduser("~")
+    chrome_cookies_path = os.path.join(user_profile, "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Cookies")
+
+    # Provide a destination path where you have write permissions
+    destination_path = "PATH_TO_TEMP_COOKIES_FILE"
+
+    try:
+        shutil.copyfile(chrome_cookies_path, destination_path)
+    except Exception as e:
+        print(f"Error copying cookies file: {e}")
+        return []
+
+    chrome_cookies = browser_cookie3.chrome(cookie_file=destination_path)
+    os.remove(destination_path)
     return chrome_cookies
 
 def set_chrome_cookies(driver, cookies):
