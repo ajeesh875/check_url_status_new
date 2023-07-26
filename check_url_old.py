@@ -1,3 +1,4 @@
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
@@ -5,10 +6,15 @@ from selenium.webdriver.chrome.options import Options
 import re
 
 def extract_links_from_sharepoint(url):
+    # Set the path to the CA certificate bundle file (cacert.pem)
+    ca_cert_bundle_path = "path/to/your/cacert.pem"  # Replace with the actual path
+
     # Set up the Chrome options
     options = Options()
     options.add_argument('--headless')  # Use headless mode
-    options.add_argument('--ignore-certificate-errors')  # Ignore SSL certificate verification
+
+    # Set the REQUESTS_CA_BUNDLE environment variable to the CA certificate bundle path
+    os.environ['REQUESTS_CA_BUNDLE'] = ca_cert_bundle_path
 
     # Use WebDriver service to avoid the deprecated headless property warning
     service = Service(ChromeDriverManager().install())
