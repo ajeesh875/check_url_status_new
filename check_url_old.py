@@ -1,6 +1,9 @@
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import re
 
 def extract_links_from_sharepoint(url):
@@ -13,8 +16,8 @@ def extract_links_from_sharepoint(url):
     driver.get(url)
 
     try:
-        # Find all elements with class name "buttonwrapper"
-        button_wrappers = driver.find_elements_by_class_name("buttonwrapper")
+        wait = WebDriverWait(driver, 10)
+        button_wrappers = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "buttonwrapper")))
 
         # Initialize a list to store the extracted links
         links = []
