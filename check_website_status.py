@@ -4,13 +4,15 @@ from selenium import webdriver
 
 def get_chrome_cookies():
     user_profile = os.path.expanduser("~")
-    chrome_cookies_path = os.path.join(user_profile, "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Cookies")
+    chrome_cookies_path = os.path.join(user_profile, "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Network","Cookies")
 
     # Provide a destination path where you have write permissions
-    destination_path = "PATH_TO_TEMP_COOKIES_FILE"
+    destination_path = "C:/Python/projects/url_status_check_selenium"
 
     try:
-        shutil.copyfile(chrome_cookies_path, destination_path)
+        with open(chrome_cookies_path, 'rb') as src, open(destination_path, 'wb') as dest:
+            dest.write(src.read())
+
     except Exception as e:
         print(f"Error copying cookies file: {e}")
         return []
@@ -55,5 +57,5 @@ def check_sharepoint_links(sharepoint_url):
 
 # Example usage
 if __name__ == "__main__":
-    sharepoint_url = "YOUR_SHAREPOINT_URL"
+    sharepoint_url = "https://microsoft.sharepoint.com/_forms/default.aspx"
     check_sharepoint_links(sharepoint_url)
