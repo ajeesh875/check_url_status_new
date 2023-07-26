@@ -1,22 +1,14 @@
-from selenium import webdriver
-from selenium.webdriver.edge.service import Service
-from selenium.webdriver.edge.options import Options
+from msedge.selenium_tools import Edge, EdgeOptions
 import re
 
 def extract_links_from_sharepoint(url):
     # Set up the Edge options
-    options = Options()
+    options = EdgeOptions()
     options.use_chromium = True
     options.add_argument('--headless')  # Use headless mode
 
-    # Replace 'path/to/your/msedgedriver.exe' with the actual path to your Edge WebDriver executable
-    edge_driver_path = 'path/to/your/msedgedriver.exe'
-
-    # Use WebDriver service and specify the Edge WebDriver path
-    service = Service(executable_path=edge_driver_path)
-
-    # Initialize the WebDriver
-    driver = webdriver.Edge(service=service, options=options)
+    # Initialize the Edge WebDriver
+    driver = Edge(options=options)
 
     # Open the SharePoint URL
     driver.get(url)
