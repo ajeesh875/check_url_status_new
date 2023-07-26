@@ -1,22 +1,10 @@
 import os
-import json
-import time
+import browser_cookie3
 from selenium import webdriver
-from pychrome import Chrome
 
 def get_chrome_cookies():
-    with Chrome() as chrome:
-        tab = chrome.tabs[0]
-        tab.Network.enable()
-        tab.Page.enable()
-        tab.Page.navigate(url="chrome://version/")
-        time.sleep(1)  # Allow some time to load the chrome://version/ page
-        response = tab.Runtime.evaluate(expression="JSON.stringify(window.chrome.getZoom())")
-        result = json.loads(response['result']['value'])
-        user_data_dir = result['userDataDirectory']
-        cookies_path = os.path.join(user_data_dir, "Default", "Cookies")
-        cookies = tab.Browser.getCookies([cookies_path])['cookies']
-    return cookies
+    chrome_cookies = browser_cookie3.chrome()
+    return chrome_cookies
 
 def set_chrome_cookies(driver, cookies):
     driver.get('about:blank')  # Open a blank page to set cookies
