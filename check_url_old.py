@@ -1,23 +1,27 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 import re
 
 def extract_links_from_sharepoint(url):
-    # Set up the headless browser
+    # Set up the Chrome options
     options = Options()
-    options.headless = True
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    options.add_argument('--headless')  # Use headless mode
+    options.add_argument('--ignore-certificate-errors')  # Ignore SSL certificate verification
+
+    # Use WebDriver service to avoid the deprecated headless property warning
+    service = Service(ChromeDriverManager().install())
+
+    # Initialize the WebDriver
+    driver = webdriver.Chrome(service=service, options=options)
 
     # Open the SharePoint URL
     driver.get(url)
 
     try:
-        wait = WebDriverWait(driver, 10)
-        button_wrappers = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "buttonwrapper")))
+        # Find all elements with class name "buttonwrapper"
+        button_wrappers = driver.find_elements_by_class_name("buttonwrapper")
 
         # Initialize a list to store the extracted links
         links = []
