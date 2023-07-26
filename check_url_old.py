@@ -1,9 +1,12 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 
 def check_sharepoint_links(sharepoint_url, chrome_driver_path):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')  # Optional: Run Chrome in headless mode (without GUI)
-    driver = webdriver.Chrome(executable_path=chrome_driver_path, options=options)
+
+    service = Service(executable_path=chrome_driver_path)
+    driver = webdriver.Chrome(service=service, options=options)
 
     try:
         driver.get(sharepoint_url)
