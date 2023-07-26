@@ -1,46 +1,58 @@
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+import os
+import json
 import time
+from selenium import webdriver
+from pychrome import Chrome
 
-def login_to_sharepoint(username, password):
-    driver = webdriver.Chrome(ChromeDriverManager().install())
-    
-    # Replace 'your_sharepoint_login_url' with the actual login page URL
-    login_url = 'your_sharepoint_login_url'
-    driver.get(login_url)
+def get_chrome_cookies():
+    with Chrome() as chrome:
+        tab = chrome.tabs[0]
+        tab.Network.enable()
+        tab.Page.enable()
+        tab.Page.navigate(url="chrome://version/")
+        time.sleep(1)  # Allow some time to load the chrome://version/ page
+        response = tab.Runtime.evaluate(expression="JSON.stringify(window.chrome.getZoom())")
+        result = json.loads(response['result']['value'])
+        user_data_dir = result['userDataDirectory']
+        cookies_path = os.path.join(user_data_dir, "Default", "Cookies")
+        cookies = tab.Browser.getCookies([cookies_path])['cookies']
+    return cookies
 
-    # Find and fill in the username and password fields
-    username_field = driver.find_element_by_id('username_input_id')
-    password_field = driver.find_element_by_id('password_input_id')
+def set_chrome_cookies(driver, cookies):
+    driver.get('about:blank')  # Open a blank page to set cookies
+    for cookie in cookies:
+        driver.add_cookie(cookie)
 
-    username_field.send_keys(username)
-    password_field.send_keys(password)
+def check_sharepoint_links(sharepoint_url):
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')  # Optional: Run Chrome in headless mode (without GUI)
 
-    # Submit the login form
-    login_button = driver.find_element_by_id('login_button_id')
-    login_button.click()
+    driver = webdriver.Chrome(options=options)
+    cookies = get_chrome_cookies()
+    set_chrome_cookies(driver, cookies)
 
-    # Add a sleep to allow the page to load after login (you can use WebDriverWait for more robust waits)
-    time.sleep(5)
-    return driver
+    try:
+        driver.get(sharepoint_url)
+        button_wrappers = driver.find_elements('css selector', '.buttonwrapper')
 
-def extract_links_from_sharepoint_page(driver):
-    # Replace 'your_sharepoint_page_url' with the URL of the page you want to scrape
-    page_url = 'your_sharepoint_page_url'
-    driver.get(page_url)
+        for wrapper in button_wrappers:
+            buttons = wrapper.find_elements('tag name', 'button')
+            for button in buttons:
+                onclick_attribute = button.get_attribute('onclick')
+                if 'http' in onclick_attribute:
+                    link_url = onclick_attribute.split("'")[1]
+                    driver.get(link_url)
+                    print(f"Link: {link_url} - Status: {driver.title}")
+                else:
+                    print("No link found in the button onclick attribute.")
 
-    # Find all links on the page
-    links = driver.find_elements_by_tag_name('a')
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
-    # Extract and print the URLs
-    for link in links:
-        print(link.get_attribute('href'))
+    finally:
+        driver.quit()
 
-    driver.quit()
-
+# Example usage
 if __name__ == "__main__":
-    username = "your_username"
-    password = "your_password"
-
-    driver = login_to_sharepoint(username, password)
-    extract_links_from_sharepoint_page(driver)
+    sharepoint_url = "YOUR_SHAREPOINT_URL"
+    check_sharepoint_links(sharepoint_url)
