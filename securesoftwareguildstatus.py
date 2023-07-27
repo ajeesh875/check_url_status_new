@@ -1,6 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.edge.options import Options as EdgeOptions
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 def check_sharepoint_links(sharepoint_url, msedge_driver_path):
     options = EdgeOptions()
@@ -13,10 +16,14 @@ def check_sharepoint_links(sharepoint_url, msedge_driver_path):
 
     try:
         driver.get(sharepoint_url)
-        button_wrappers = driver.find_elements_by_css_selector('.buttonwrapper')
+
+        # Wait for button wrappers to be present
+        WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.buttonwrapper')))
+        button_wrappers = driver.find_elements(By.CSS_SELECTOR, '.buttonwrapper')
 
         for wrapper in button_wrappers:
-            buttons = wrapper.find_elements_by_tag_name('button')
+            # Wait for buttons to be present within the wrapper
+            buttons = WebDriverWait(wrapper, 5).until(EC.presence_of_all_elements_located((By.TAG_NAME, 'button')))
             for button in buttons:
                 onclick_attribute = button.get_attribute('onclick')
                 if 'http' in onclick_attribute:
