@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.edge.options import Options as EdgeOptions
 
 def check_sharepoint_links(sharepoint_url, msedge_driver_path):
@@ -7,7 +8,8 @@ def check_sharepoint_links(sharepoint_url, msedge_driver_path):
     options.add_argument('--headless')  # Optional: Run Edge in headless mode (without GUI)
     options.add_argument('--ignore-ssl-errors=true')  # Ignore SSL certificate errors
 
-    driver = webdriver.Edge(executable_path=msedge_driver_path, options=options)
+    service = EdgeService(executable_path=msedge_driver_path)
+    driver = webdriver.Edge(service=service, options=options)
 
     try:
         driver.get(sharepoint_url)
