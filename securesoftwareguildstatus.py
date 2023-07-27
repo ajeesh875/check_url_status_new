@@ -1,64 +1,37 @@
-import requests
-from bs4 import BeautifulSoup
-from plyer import notification
-import re
+import os
+from msedge.selenium_tools import Edge, EdgeOptions
 
-def get_menu_links(url):
+def check_sharepoint_links(sharepoint_url, edge_driver_path):
+    options = EdgeOptions()
+    options.use_chromium = True
+    options.add_argument('--headless')  # Optional: Run Edge in headless mode (without GUI)
+    options.add_argument('--ignore-ssl-errors=true')  # Ignore SSL certificate errors
+
+    driver = Edge(executable_path=edge_driver_path, options=options)
+
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, "html.parser")
-            menu_links = []
-            button_wrapper = soup.find("div", class_="buttonwrapper")
-            if button_wrapper:
-                buttons = button_wrapper.find_all("button")
-                for button in buttons:
-                    onclick_value = button.get("onclick")
-                    if onclick_value:
-                        url_match = re.search(r"'(https?://[^']*)'", onclick_value)
-                        if url_match:
-                            menu_links.append(url_match.group(1))
-            return menu_links
-        else:
-            print(f"Failed to retrieve menu links from {url}. Status code: {response.status_code}")
-    except requests.ConnectionError:
-        print(f"Failed to retrieve menu links from {url}. Connection error.")
+        driver.get(sharepoint_url)
+        button_wrappers = driver.find_elements('css selector', '.buttonwrapper')
 
-def check_link_status(url):
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            notification_title = "Link Status"
-            notification_message = f"The link {url} is up and running."
-        else:
-            notification_title = "Link Status"
-            notification_message = f"The link {url} is down with status code {response.status_code}."
+        for wrapper in button_wrappers:
+            buttons = wrapper.find_elements('tag name', 'button')
+            for button in buttons:
+                onclick_attribute = button.get_attribute('onclick')
+                if 'http' in onclick_attribute:
+                    link_url = onclick_attribute.split("'")[1]
+                    driver.get(link_url)
+                    print(f"Link: {link_url} - Status: {driver.title}")
+                else:
+                    print("No link found in the button onclick attribute.")
 
-        notification.notify(
-            title=notification_title,
-            message=notification_message,
-            timeout=5  # Display time for the notification in seconds
-        )
-    except requests.ConnectionError:
-        notification_title = "Link Status"
-        notification_message = f"The link {url} is unreachable."
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
-        notification.notify(
-            title=notification_title,
-            message=notification_message,
-            timeout=5  # Display time for the notification in seconds
-        )
+    finally:
+        driver.quit()
 
 # Example usage
-website_url = "https://www.example.com"
-
-# Get menu links from the website
-menu_links = get_menu_links(website_url)
-
-if menu_links:
-    print(f"Total menu links found: {len(menu_links)}")
-    print("Checking link status...")
-    for link in menu_links:
-        check_link_status(link)
-else:
-    print("No menu links found on the website.")
+if __name__ == "__main__":
+    sharepoint_url = "YOUR_SHAREPOINT_URL"
+    edge_driver_path = "PATH_TO_EDGE_WEBDRIVER"
+    check_sharepoint_links(sharepoint_url, edge_driver_path)
