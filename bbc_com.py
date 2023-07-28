@@ -1,19 +1,29 @@
-import requests
-from bs4 import BeautifulSoup
+import win32com.client as win32
 
-def get_bbc_navigation_menu():
-    url = "https://www.bbc.com/"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, "html.parser")
+def send_outlook_email(subject, body, recipient_email):
+    try:
+        # Connect to the running instance of Outlook
+        outlook = win32.Dispatch('Outlook.Application')
 
-    menu_items = soup.find_all("li", class_="orb-nav-{menu_item}")
-    navigation_menu = []
+        # Create a new email message
+        email = outlook.CreateItem(0)  # 0 represents the MailItem type (email)
 
-    for item in menu_items:
-        navigation_menu.append(item.text.strip())
+        # Set the email properties
+        email.Subject = subject
+        email.Body = body
+        email.To = recipient_email
 
-    return navigation_menu
+        # Send the email
+        email.Send()
+
+        print("Email sent successfully.")
+    except Exception as e:
+        print(f"An error occurred while sending the email: {e}")
 
 # Example usage
-bbc_menu = get_bbc_navigation_menu()
-print(bbc_menu)
+if __name__ == "__main__":
+    subject = "Your Subject Here"
+    body = "Your email content here."
+    recipient_email = "recipient@example.com"
+
+    send_outlook_email(subject, body, recipient_email)
