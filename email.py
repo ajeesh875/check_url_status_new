@@ -1,6 +1,6 @@
 import win32com.client as win32
 
-def send_outlook_email_with_sensitivity(subject, body, recipient_email, sensitivity_level):
+def send_outlook_email_with_label(subject, body, recipient_email, label):
     try:
         # Connect to the running instance of Outlook
         outlook = win32.Dispatch('Outlook.Application')
@@ -13,20 +13,8 @@ def send_outlook_email_with_sensitivity(subject, body, recipient_email, sensitiv
         email.Body = body
         email.To = recipient_email
 
-        # Access the PropertyAccessor object to modify the sensitivity property
-        pa = email.PropertyAccessor
-
-        # Sensitivity level values:
-        # 0 = Normal, 1 = Personal, 2 = Private, 3 = Confidential
-        sensitivity_values = {
-            "Normal": 0,
-            "Personal": 1,
-            "Private": 2,
-            "Confidential": 3
-        }
-
-        sensitivity_value = sensitivity_values.get(sensitivity_level, 0)
-        pa.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x00360003", sensitivity_value)
+        # Set the label (category) of the email
+        email.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/string/{00020329-0000-0000-C000-000000000046}/Keywords", label)
 
         # Send the email
         email.Send()
@@ -40,6 +28,6 @@ if __name__ == "__main__":
     subject = "Your Subject Here"
     body = "Your email content here."
     recipient_email = "recipient@example.com"
-    sensitivity_level = "Confidential"  # Replace with the desired sensitivity level
+    label = "Public"  # Replace with the desired label
 
-    send_outlook_email_with_sensitivity(subject, body, recipient_email, sensitivity_level)
+    send_outlook_email_with_label(subject, body, recipient_email, label)
